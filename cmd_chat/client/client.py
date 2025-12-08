@@ -2,6 +2,7 @@ import json
 import time
 import threading
 import os
+import uuid
 from pathlib import Path
 from websocket import create_connection, WebSocketConnectionClosedException
 
@@ -42,6 +43,7 @@ class Client(RSAService):
         self.token = token
         self.use_ssl = use_ssl
         self.room_id = room_id
+        self.session_id = str(uuid.uuid4())
         self.last_sequence = 0
         self.reconnecting = False
         self.welcome_shown = False  # Track if welcome message has been shown
@@ -96,6 +98,8 @@ class Client(RSAService):
             params.append(f"room_id={self.room_id}")
         if self.last_sequence > 0:
             params.append(f"last_sequence={self.last_sequence}")
+        if self.session_id:
+            params.append(f"session_id={self.session_id}")
         
         query = "&".join(params)
         return f"{self.ws_url}{path}?{query}" if query else f"{self.ws_url}{path}"
@@ -222,7 +226,8 @@ class Client(RSAService):
                                                 username=self.username,
                                                 password=self.password,
                                                 token=self.token,
-                                                room_id=self.room_id
+                                                room_id=self.room_id,
+                                                session_id=self.session_id
                                             )
                                         except Exception as e:
                                             if RENDERER_MODE != "json":
@@ -252,6 +257,13 @@ class Client(RSAService):
                                                 print(t("no_rooms_available"))
                                         elif cmd == "nick" and "changed to:" in cmd_msg:
                                             name = cmd_msg.split(":")[-1].strip()
+                                            # Update local username so outgoing messages use the new nickname
+                                            self.username = name
+                                            self.renderer.username = name
+                                            self.close_response = json.dumps({
+                                                "action": "close",
+                                                "username": self.username
+                                            })
                                             print(t("command_nick_changed").format(name=name))
                                         elif cmd == "room" and "Switched to room:" in cmd_msg:
                                             room_id = msg.get("room_id") or cmd_msg.split(":")[-1].strip()
@@ -438,7 +450,8 @@ class Client(RSAService):
             username=self.username,
             password=self.password,
             token=self.token,
-            room_id=self.room_id
+            room_id=self.room_id,
+            session_id=self.session_id
         )
         self._remove_keys()
 

@@ -35,11 +35,13 @@ No logs, no traces, no compromise.
 ## ⚙️ How It Works
 
 1. The client generates an RSA 2048-bit key pair.
-2. The server creates a symmetric encryption key.
-3. The client sends its public key to the server.
-4. The server encrypts the symmetric key with the client's public key and sends it back.
+2. The server creates a room-based symmetric encryption key (shared by all clients in the same room).
+3. The client sends its public key to the server along with the room_id.
+4. The server encrypts the room's symmetric key with the client's public key and sends it back.
 5. The client decrypts and confirms the key.
-6. From that point, all communication is done via symmetric encryption (Fernet).
+6. From that point, all communication is done via symmetric encryption (Fernet) using the shared room key.
+
+**Room-Based Encryption**: All clients in the same room share the same encryption key, allowing them to read each other's messages while maintaining security isolation between different rooms.
 
 Everything happens in memory only. Nothing is written to disk.
 
@@ -82,7 +84,24 @@ Everything happens in memory only. Nothing is written to disk.
    # Edit .env with your settings
    ```
 
-4. **Start the server:**
+4. **Run the application:**
+   
+   **Using run scripts (recommended):**
+   ```bash
+   # Linux / macOS:
+   ./run.sh serve
+   ./run.sh connect
+   
+   # Windows:
+   run.bat serve
+   run.bat connect
+   
+   # Or directly with Python:
+   python run.py serve
+   python run.py connect
+   ```
+   
+   **Or using the original entry point:**
    ```bash
    # With .env file configured:
    python cmd_chat.py serve
@@ -116,6 +135,36 @@ Everything happens in memory only. Nothing is written to disk.
    - **To send a message:** Simply type your message and press Enter
    - **To use commands:** Type commands starting with `/` (e.g., `/help`, `/nick MyName`)
    - **To quit:** Type `q` or `/quit`
+
+### Using Run Scripts
+
+The project includes convenient run scripts that automatically handle virtual environment activation and dependency checking:
+
+**Linux / macOS:**
+```bash
+./run.sh serve          # Start server
+./run.sh connect        # Connect client
+./run.sh serve 0.0.0.0 1000 --password YOUR_PASSWORD  # With arguments
+```
+
+**Windows:**
+```cmd
+run.bat serve           # Start server
+run.bat connect         # Connect client
+run.bat serve 0.0.0.0 1000 --password YOUR_PASSWORD  # With arguments
+```
+
+**Cross-platform (Python):**
+```bash
+python run.py serve     # Start server
+python run.py connect   # Connect client
+```
+
+The run scripts will:
+- ✅ Check for virtual environment (warn if not activated)
+- ✅ Verify dependencies are installed
+- ✅ Automatically activate venv (in shell scripts)
+- ✅ Run the application with proper error handling
 
 ---
 

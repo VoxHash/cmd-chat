@@ -29,7 +29,15 @@ class RSAService(CryptoService):
         except Exception as e:
             raise RuntimeError(f"Decryption failed: {e}")
 
-    def _request_key(self, url: str, username: str, password: str | None = None, token: str | None = None, room_id: str | None = None):
+    def _request_key(
+        self,
+        url: str,
+        username: str,
+        password: str | None = None,
+        token: str | None = None,
+        room_id: str | None = None,
+        session_id: str | None = None
+    ):
         try:
             pubkey_bytes = self.public_key.save_pkcs1()
             
@@ -41,6 +49,8 @@ class RSAService(CryptoService):
                 data["password"] = password
             if room_id:
                 data["room_id"] = room_id
+            if session_id:
+                data["session_id"] = session_id
             
             r = requests.post(
                 url,

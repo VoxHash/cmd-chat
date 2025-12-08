@@ -2,6 +2,7 @@ import asyncio
 import json
 import rsa
 import time
+import uuid
 from collections import defaultdict
 from cryptography.fernet import Fernet
 from functools import partial
@@ -190,7 +191,8 @@ def attach_endpoints(app: Sanic):
             return
         
         username = username or _get_str_arg(request, "username") or "unknown"
-        user_key = f"{request.ip}, {username}"
+        session_id = _get_str_arg(request, "session_id") or str(uuid.uuid4())
+        user_key = f"{request.ip}, {session_id}"
         last_heartbeat = time.time()
         
         async def send_heartbeat():
@@ -227,6 +229,8 @@ def attach_endpoints(app: Sanic):
                     if text and text.startswith("/"):
                         command_result = await _handle_command(text, user_key, username, ws)
                         if command_result:
+                            # Refresh username if it changed (e.g., /nick)
+                            username = USER_NICKNAMES.get(user_key, username)
                             continue
                     
                     if text is None:
@@ -368,7 +372,8 @@ def attach_endpoints(app: Sanic):
 
         username = _get_str_arg(request, "username") or "unknown"
         room_id = _get_str_arg(request, "room_id") or "default"
-        user_key = f"{request.ip}, {username}"
+        session_id = _get_str_arg(request, "session_id") or str(uuid.uuid4())
+        user_key = f"{request.ip}, {session_id}"
         
         # Ensure room exists and has a key
         if room_id not in ROOM_KEYS:
